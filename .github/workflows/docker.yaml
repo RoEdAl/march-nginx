@@ -27,7 +27,11 @@ jobs:
         run: |
           github_event='${{ toJson(github.event) }}'
           publish_image=$(jq 'has("release") and ((.release.draft?  or .release.prelease?) | not)' <<< $github_event)
+          echo "Publish image: ${publish_image}"
           echo "PUBLISH_IMAGE=${publish_image}" >> $GITHUB_ENV
+      - name: Show environment variable
+        run: |
+          echo "PUBLISH IMAGE: $PUBLISH_IMAGE"
 
   build:
     name: Build image
