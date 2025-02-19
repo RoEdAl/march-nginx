@@ -7,7 +7,10 @@ runs:
       shell: bash
       run: |
         gh_repo=${{ github.repository }}
-        github_event='${{ toJson(github.event) }}'
+        github_event=$(cat <<EVENT
+        ${{ toJson(github.event) }}
+        EVENT
+        )
         publish_image=$(jq -r 'if has("release") and ((.release.draft?  or .release.prelease?) | not) then "true" else "" end' <<< $github_event)
 
         { 
