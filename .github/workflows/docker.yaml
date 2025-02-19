@@ -39,6 +39,14 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: Show environment variable
+        run: |
+          echo "PUBLISH IMAGE: $PUBLISH_IMAGE"
+
+      - name: Show variable
+        run: |
+          echo 'PUBLISH image: ${{github.env.PUBLISH_IMAGE}}'
+
       - name: Check out code
         uses: actions/checkout@v4
         with:
@@ -89,6 +97,14 @@ jobs:
           - platform: linux/arm/v6
             qemu: arm
     steps:
+      - name: Show environment variable
+        run: |
+          echo "PUBLISH IMAGE: $PUBLISH_IMAGE"
+          
+      - name: Show variable
+        run: |
+          echo 'PUBLISH image: ${{github.env.PUBLISH_IMAGE}}'
+          
       - name: Prepare
         run: |
           platform=${{ matrix.platform.platform }}
