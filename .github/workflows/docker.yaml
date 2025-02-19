@@ -16,8 +16,17 @@ on:
     branches: [ master, main ]
 
 jobs:
+  pshow:
+    name: Show event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show event
+        run: |
+          echo '${{ toJson(github.event) }}' | jq
+
   build:
     name: Build image
+    needs: pshow
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -56,6 +65,7 @@ jobs:
 
   mbuild:
     name: Build image
+    needs: pshow
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
