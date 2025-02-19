@@ -8,5 +8,4 @@ runs:
       run: |
         github_event='${{ toJson(github.event) }}'
         publish_image=$(jq -r 'if has("release") and ((.release.draft?  or .release.prelease?) | not) then "true" else "" end' <<< $github_event)
-        echo "PUBLISH_IMAGE=${publish_image}"
-        echo "PUBLISH_IMAGE=${publish_image}" >> $GITHUB_ENV
+        echo "PUBLISH_IMAGE=${publish_image}" | tee -a $GITHUB_ENV
