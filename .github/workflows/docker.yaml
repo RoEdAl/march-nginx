@@ -70,8 +70,6 @@ jobs:
             qemu: arm
           - platform: linux/arm/v6
             qemu: arm
-          - platform: linux/riscv64
-            qemu: riscv64
     steps:
       - name: Prepare
         run: |
