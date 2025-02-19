@@ -11,8 +11,7 @@ on:
   release:
     types: [published]
   push:
-    branches: [ master, main, docker-build-multiple-runners ]
-    tags: [ 'v*' ]
+    branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
 
@@ -101,14 +100,26 @@ jobs:
         uses: docker/setup-buildx-action@v3
         
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'release'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build
+        if: github.event_name != 'release'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform.platform }}
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+
       - name: Build and push
+        if: github.event_name == 'release'
         uses: docker/build-push-action@v6
         id: build
         with:
@@ -119,12 +130,14 @@ jobs:
           outputs: type=image,"name=ghcr.io/${{ env.GH_REPO }}",push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
+        if: github.event_name == 'release'
         run: |
           mkdir -p ${{ runner.temp }}/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload digest
+        if: github.event_name == 'release'
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ env.PLATFORM_PAIR }}
@@ -135,6 +148,7 @@ jobs:
 
   merge:
     name: Merge images
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     needs:
       - mbuild
