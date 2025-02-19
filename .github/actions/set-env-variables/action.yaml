@@ -7,7 +7,7 @@ runs:
       shell: bash
       run: |
         gh_repo=${{ github.repository }}
-        github_event=$(cat <<EVENT
+        github_event=$(cat <<'EVENT'
         ${{ toJson(github.event) }}
         EVENT
         )
