@@ -6,6 +6,11 @@ runs:
     - name: Set variables
       shell: bash
       run: |
+        gh_repo=${{ github.repository }}
         github_event='${{ toJson(github.event) }}'
         publish_image=$(jq -r 'if has("release") and ((.release.draft?  or .release.prelease?) | not) then "true" else "" end' <<< $github_event)
-        echo "PUBLISH_IMAGE=${publish_image}" | tee -a $GITHUB_ENV
+
+        { 
+          echo "GH_REPO=${gh_repo,,}"
+          echo "PUBLISH_IMAGE=${publish_image}"
+        } | tee -a $GITHUB_ENV
