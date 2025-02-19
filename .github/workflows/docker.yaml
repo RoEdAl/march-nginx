@@ -160,4 +160,6 @@ jobs:
       - uses: ./.github/actions/set-env-variables
 
       - uses: ./.github/actions/merge-docker-images
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
         if: env.PUBLISH_IMAGE
