@@ -31,7 +31,7 @@ jobs:
           ${{ toJson(github.event) }}
           EVENT
           )
-          publish_image=$(jq -r 'if has("release") and ((.release.draft?  or .release.prelease?) | not) then "true" else "" end' <<< $github_event)
+          publish_image=$(jq -r 'if has("release") and ((.release.draft or .release.prerelease) | not) then "true" else "" end' <<< $github_event)
 
           { 
             echo "gh_repo=${gh_repo,,}"
