@@ -1,0 +1,11 @@
+name: Set required environment variables
+description: Set required environment variables
+runs:
+  using: composite
+  steps:
+    - name: Set variables
+      shell: bash
+      run: |
+        github_event='${{ toJson(github.event) }}'
+        publish_image=$(jq -r 'if has("release") and ((.release.draft?  or .release.prelease?) | not) then "true" else "" end' <<< "$github_event")
+        echo "PUBLISH_IMAGE=${publish_image}" >> $GITHUB_ENV
