@@ -10,33 +10,48 @@ name: Upload Docker images to GitHub Container Registry (ghcr.io)
 on:
   release:
     types: [released]
+
   push:
-    branches: [ master, main ]
+    branches:
+      - master
+      - main
+
   pull_request:
-    branches: [ master, main ]
+    branches:
+      - master
+      - main
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git tag to push the image'
+        required: true
+        type: string
 
 jobs:
   prepare:
     name: Prepare
     runs-on: ubuntu-latest
     outputs:
-      gh_repo: ${{ steps.vars.outputs.gh_repo }}
+      github_repository: ${{ steps.vars.outputs.github_repository }}
       publish_image: ${{ steps.vars.outputs.publish_image }}
     steps:
       - id: vars
         name: Prepare outputs
         run: |
-          gh_repo=${{ github.repository }}
-          github_event=$(cat <<'EVENT'
-          ${{ toJson(github.event) }}
-          EVENT
-          )
-          publish_image=$(jq -r 'if has("release") and ((.release.draft or .release.prerelease) | not) then "true" else "" end' <<< $github_event)
+          github_repository=${{ github.repository }}
+          echo "github_repository=${github_repository,,}" | tee -a $GITHUB_OUTPUT
 
-          { 
-            echo "gh_repo=${gh_repo,,}"
-            echo "publish_image=${publish_image}"
-          } | tee -a $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "release" ]; then
+            github_event=$(cat <<'EVENT'
+            ${{ toJson(github.event) }}
+          EVENT
+            )
+            publish_image=$(jq -r 'if has("release") and ((.release.draft or .release.prerelease) | not) then "true" else "" end' <<< $github_event)
+            echo "publish_image=${publish_image}" | tee -a $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "publish_image=true" | tee -a $GITHUB_OUTPUT
+          fi
 
   build:
     name: Build image
@@ -103,9 +118,16 @@ jobs:
           echo "platform_pair=${platform//\//-}" | tee -a $GITHUB_OUTPUT
 
       - name: Check out code
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+          fetch-tags: true
+
+      - name: Check out code
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
           fetch-tags: true
 
       - name: Docker meta
@@ -152,7 +174,7 @@ jobs:
           platforms: ${{ matrix.platform.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          outputs: type=image,"name=ghcr.io/${{ needs.prepare.outputs.gh_repo }}",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/${{ needs.prepare.outputs.github_repository }}",push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         if: needs.prepare.outputs.publish_image
@@ -201,26 +223,23 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
-          # create latest tag for branch events
           flavor: |
-            latest=true
+            latest=auto
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}.{{minor}}.{{patch}}
+            type=semver,pattern={{version}},value=${{inputs.ref}}
+            type=semver,pattern={{major}}.{{minor}},value=${{inputs.ref}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}},value=${{inputs.ref}}
 
       - name: Create manifest list and push
         shell: bash
         working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ needs.prepare.outputs.gh_repo }}@sha256:%s ' *)
+            $(printf 'ghcr.io/${{ needs.prepare.outputs.github_repository }}@sha256:%s ' *)
 
       - name: Inspect image
         shell: bash
         run: |
-          docker buildx imagetools inspect ghcr.io/${{ needs.prepare.outputs.gh_repo }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ghcr.io/${{ needs.prepare.outputs.github_repository }}:${{ steps.meta.outputs.version }}
 
 
