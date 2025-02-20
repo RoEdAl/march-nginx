@@ -182,7 +182,7 @@ jobs:
         if: needs.prepare.outputs.publish_image
         run: |
           mkdir -p ${{ runner.temp }}/digests
-          digest="${{ steps.build.outputs.digest }}"
+          digest='${{ steps.build.outputs.digest }}'
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload digest
@@ -233,15 +233,12 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}.{{patch}}${{ needs.prepare.outputs.semver_value }}
 
       - name: Create manifest list and push
-        shell: bash
         working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf 'ghcr.io/${{ needs.prepare.outputs.github_repository }}@sha256:%s ' *)
 
       - name: Inspect image
-        shell: bash
-        run: |
-          docker buildx imagetools inspect ghcr.io/${{ needs.prepare.outputs.github_repository }}:${{ steps.meta.outputs.version }}
+        run: docker buildx imagetools inspect ghcr.io/${{ needs.prepare.outputs.github_repository }}:${{ steps.meta.outputs.version }}
 
 
