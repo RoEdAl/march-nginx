@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git tag to push the image'
+        description: Git tag to push the image
         required: true
         type: string
 
