@@ -9,7 +9,8 @@ name: Upload Docker images to GitHub Container Registry (ghcr.io)
 
 on:
   release:
-    types: [released]
+    types:
+      - released
 
   push:
     branches:
