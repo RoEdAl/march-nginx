@@ -48,12 +48,7 @@ jobs:
           echo "github_repository=${github_repository,,}" | tee -a $GITHUB_OUTPUT | prepend "$NOTICE_VAR"
 
           if [ "${{ github.event_name }}" = "release" ]; then
-            github_event=$(cat <<'EVENT'
-            ${{ toJson(github.event) }}
-          EVENT
-            )
-            publish_image=$(jq -r 'if has("release") and ((.release.draft or .release.prerelease) | not) then "true" else "" end' <<< $github_event)
-            echo "publish_image=${publish_image}" | tee -a $GITHUB_OUTPUT | prepend "$NOTICE_VAR"
+            echo "publish_image=true" | tee -a $GITHUB_OUTPUT | prepend "$NOTICE_VAR"
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "publish_image=true" | tee -a $GITHUB_OUTPUT | prepend "$NOTICE_VAR"
             echo "semver_value=,value=${{ inputs.ref }}" | tee -a $GITHUB_OUTPUT | prepend "$NOTICE_VAR"
